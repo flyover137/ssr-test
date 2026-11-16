@@ -1,0 +1,200 @@
+---
+import { env } from 'cloudflare:workers';
+
+const renderedAt = new Date().toISOString();
+const cf = Astro.request.cf;
+const clientAddress = Astro.clientAddress;
+const environment = env.ENVIRONMENT ?? 'development';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Astro on Cloudflare Workers</title>
+		<style>
+			:root {
+				--bg-color: #0f172a;
+				--card-bg: #1e293b;
+				--text-main: #f8fafc;
+				--text-muted: #94a3b8;
+				--accent: #f38020;
+				--accent-astro: #e0234e;
+				--code-bg: #0b1120;
+				--border: #334155;
+			}
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+				background-color: var(--bg-color);
+				color: var(--text-main);
+				line-height: 1.6;
+				padding: 2rem 1rem;
+				display: flex;
+				justify-content: center;
+			}
+			main {
+				max-width: 800px;
+				width: 100%;
+			}
+			header {
+				margin-bottom: 2rem;
+				border-bottom: 1px solid var(--border);
+				padding-bottom: 1.5rem;
+			}
+			.badge {
+				display: inline-block;
+				background: linear-gradient(135deg, var(--accent-astro), var(--accent));
+				color: white;
+				font-size: 0.75rem;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				padding: 0.25rem 0.6rem;
+				border-radius: 9999px;
+				margin-bottom: 0.75rem;
+			}
+			h1 {
+				font-size: 2.25rem;
+				margin-bottom: 0.5rem;
+			}
+			p.subtitle {
+				color: var(--text-muted);
+				font-size: 1.1rem;
+			}
+			.card {
+				background-color: var(--card-bg);
+				border: 1px solid var(--border);
+				border-radius: 0.75rem;
+				padding: 1.5rem;
+				margin-bottom: 1.5rem;
+			}
+			.card h2 {
+				font-size: 1.25rem;
+				margin-bottom: 1rem;
+				color: #cbd5e1;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			dl {
+				display: grid;
+				grid-template-columns: 180px 1fr;
+				row-gap: 0.75rem;
+				font-size: 0.95rem;
+			}
+			dt {
+				color: var(--text-muted);
+				font-weight: 500;
+			}
+			dd {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+				word-break: break-all;
+			}
+			.badge-ssr {
+				background-color: #064e3b;
+				color: #34d399;
+				padding: 0.15rem 0.45rem;
+				border-radius: 4px;
+				font-weight: 600;
+			}
+			pre {
+				background-color: var(--code-bg);
+				padding: 1rem;
+				border-radius: 0.5rem;
+				overflow-x: auto;
+				font-size: 0.875rem;
+				border: 1px solid var(--border);
+			}
+			code {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+			}
+			a {
+				color: #38bdf8;
+				text-decoration: none;
+			}
+			a:hover {
+				text-decoration: underline;
+			}
+			.actions {
+				display: flex;
+				gap: 1rem;
+				margin-top: 1rem;
+			}
+			.btn {
+				display: inline-block;
+				background-color: var(--accent);
+				color: white;
+				padding: 0.5rem 1rem;
+				border-radius: 0.5rem;
+				font-weight: 600;
+				text-decoration: none;
+			}
+			.btn:hover {
+				opacity: 0.9;
+				text-decoration: none;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<header>
+				<span class="badge">Astro 5 + Cloudflare Worker</span>
+				<h1>Server-Side Rendered (SSR)</h1>
+				<p class="subtitle">Running on Cloudflare's global edge network via Cloudflare Workers.</p>
+			</header>
+
+			<section class="card">
+				<h2>⚡ Live Request &amp; Runtime State</h2>
+				<dl>
+					<dt>Mode</dt>
+					<dd><span class="badge-ssr">On-Demand SSR</span> (Executed on Worker)</dd>
+
+					<dt>Rendered At</dt>
+					<dd>{renderedAt}</dd>
+
+					<dt>Client IP</dt>
+					<dd>{clientAddress}</dd>
+
+					<dt>Environment</dt>
+					<dd>{environment}</dd>
+
+					<dt>Cloudflare Colo</dt>
+					<dd>{cf?.colo ?? 'Local Dev (no edge colo)'}</dd>
+
+					<dt>Country / City</dt>
+					<dd>{cf?.country ? `${cf.country} / ${cf.city ?? 'Unknown'}` : 'Local Dev'}</dd>
+
+					<dt>Timezone</dt>
+					<dd>{cf?.timezone ?? 'Local Dev'}</dd>
+				</dl>
+
+				<div class="actions">
+					<a href="/api/health" class="btn">View JSON API Route (/api/health)</a>
+				</div>
+			</section>
+
+			<section class="card">
+				<h2>🛠️ Quick Commands</h2>
+				<pre><code># Start local dev server
+npm run dev
+
+# Build for Cloudflare Worker
+npm run build
+
+# Preview locally using Cloudflare's workerd runtime
+npm run preview
+
+# Deploy to Cloudflare Workers
+npm run deploy</code></pre>
+			</section>
+		</main>
+	</body>
+</html>

@@ -1,0 +1,30 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "ssr-test",
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"compatibility_date": "2026-11-10",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"vars": {
+		"ENVIRONMENT": "development"
+	}
+	// Cloudflare resource binding examples:
+	// "kv_namespaces": [
+	//   { "binding": "MY_KV", "id": "<KV_NAMESPACE_ID>" }
+	// ],
+	// "d1_databases": [
+	//   { "binding": "DB", "database_name": "my-db", "database_id": "<D1_DATABASE_ID>" }
+	// ],
+	// "r2_buckets": [
+	//   { "binding": "MY_BUCKET", "bucket_name": "my-bucket" }
+	// ]
+}
