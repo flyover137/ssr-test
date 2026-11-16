@@ -1,280 +1,60 @@
 ---
-import Nav from '../components/Nav.astro';
-import { env } from 'cloudflare:workers';
-
-// EXPLICIT SSR ON-DEMAND INSTRUCTION
 export const prerender = false;
 
-const requestTimestamp = new Date().toISOString();
-const requestRandomId = Math.random().toString(36).substring(2, 12).toUpperCase();
-const cf = Astro.request.cf;
-const clientAddress = Astro.clientAddress;
-const userAgent = Astro.request.headers.get('user-agent') ?? 'Unknown';
-const queryMsg = Astro.url.searchParams.get('msg') ?? 'None provided (try adding ?msg=HelloWorld to the URL)';
-const environment = env.ENVIRONMENT ?? 'development';
+const timestamp = new Date().toLocaleTimeString();
+const random = Math.floor(Math.random() * 1000);
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SSR Demonstration | Astro + Cloudflare</title>
+    <title>SSR Demo</title>
     <style>
-      :root {
-        --bg: #0b0f19;
-        --card-bg: #131c2e;
-        --text: #f1f5f9;
-        --text-muted: #94a3b8;
-        --ssr-color: #38bdf8;
-        --ssr-bg: rgba(56, 189, 248, 0.15);
-        --border: #1e293b;
-      }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+      :root { color-scheme: light dark; }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        background-color: var(--bg);
-        color: var(--text);
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 540px;
+        margin: 3rem auto;
+        padding: 0 1rem;
         line-height: 1.6;
-        padding: 1.5rem;
-        display: flex;
-        justify-content: center;
       }
-      main {
-        max-width: 820px;
-        width: 100%;
+      nav { margin-bottom: 2rem; display: flex; gap: 1rem; }
+      .box {
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin: 1.5rem 0;
       }
-      .badge-mode {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: var(--ssr-bg);
-        color: var(--ssr-color);
-        border: 1px solid var(--ssr-color);
-        padding: 0.35rem 0.85rem;
-        border-radius: 9999px;
-        font-weight: 700;
-        font-size: 0.85rem;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        margin-bottom: 0.75rem;
-      }
-      h1 {
-        font-size: 2.2rem;
-        margin-bottom: 0.5rem;
-      }
-      .subtitle {
-        color: var(--text-muted);
-        font-size: 1.1rem;
-        margin-bottom: 1.5rem;
-      }
-      .card {
-        background-color: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-      }
-      .card-ssr {
-        border-left: 4px solid var(--ssr-color);
-      }
-      .card h2 {
-        font-size: 1.25rem;
-        margin-bottom: 1rem;
-        color: #e2e8f0;
-      }
-      .proof-grid {
-        display: grid;
-        grid-template-columns: 190px 1fr;
-        row-gap: 0.85rem;
-        font-size: 0.95rem;
-      }
-      .proof-grid dt {
-        color: var(--text-muted);
-        font-weight: 500;
-      }
-      .proof-grid dd {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        word-break: break-all;
-      }
-      .live-banner {
-        background: #090e17;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        margin: 1rem 0;
-      }
-      .live-banner .label {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.25rem;
-      }
-      .live-banner .time {
-        font-size: 1.25rem;
-        font-weight: 700;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        color: var(--ssr-color);
-      }
-      .interactive-row {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-top: 1rem;
-        flex-wrap: wrap;
-      }
-      .btn {
-        background-color: var(--ssr-color);
-        color: #082f49;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        border-radius: 0.5rem;
-        font-weight: 700;
-        cursor: pointer;
-        font-size: 0.95rem;
-        transition: opacity 0.15s;
-        text-decoration: none;
+      .badge {
         display: inline-block;
-      }
-      .btn:hover {
-        opacity: 0.9;
-      }
-      .hint {
-        color: var(--text-muted);
-        font-size: 0.875rem;
-      }
-      pre {
-        background-color: #060911;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        overflow-x: auto;
-        font-size: 0.875rem;
-        border: 1px solid var(--border);
-        margin-top: 0.5rem;
-      }
-      code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        color: #38bdf8;
-      }
-      .query-demo {
-        background: #0f172a;
-        padding: 0.75rem 1rem;
-        border-radius: 0.5rem;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-      }
-      .switch-banner {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        padding: 1rem 1.25rem;
-        border-radius: 0.75rem;
-        margin-top: 2rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-      }
-      .switch-banner a {
-        background-color: #059669;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.9rem;
+        background: #3b82f6;
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        text-transform: uppercase;
       }
     </style>
   </head>
   <body>
-    <main>
-      <Nav currentPath="/ssr" />
+    <nav>
+      <a href="/">Home</a>
+      <a href="/ssg">SSG</a>
+      <strong>SSR</strong>
+    </nav>
 
-      <header>
-        <span class="badge-mode">🔵 SSR (Server-Side Rendering)</span>
-        <h1>On-Demand Worker Rendered Page</h1>
-        <p class="subtitle">Executed dynamically by the Cloudflare Worker upon receiving this specific HTTP request.</p>
-      </header>
+    <span class="badge">Server-Side Rendering</span>
+    <h1>SSR Page</h1>
+    <p>Rendered on-demand by Cloudflare Worker on every request.</p>
 
-      <section class="card card-ssr">
-        <h2>⚡ The Proof: Request-Time Metadata</h2>
-        <p>This page executed its frontmatter script on the Cloudflare Worker runtime when your browser requested it:</p>
+    <div class="box">
+      <p><strong>Request Time:</strong> {timestamp}</p>
+      <p><strong>Request Random #:</strong> {random}</p>
+    </div>
 
-        <div class="live-banner">
-          <div class="label">🚀 Request Rendered At (Server Clock)</div>
-          <div class="time">{requestTimestamp}</div>
-        </div>
-
-        <dl class="proof-grid">
-          <dt>Rendering Mode</dt>
-          <dd><strong>SSR (On-Demand)</strong></dd>
-
-          <dt>Configuration Flag</dt>
-          <dd><code>export const prerender = false;</code> (or <code>output: 'server'</code>)</dd>
-
-          <dt>Unique Request ID</dt>
-          <dd><code>{requestRandomId}</code> (regenerated on every request)</dd>
-
-          <dt>Client IP Address</dt>
-          <dd><code>{clientAddress ?? '127.0.0.1 (local)'}</code></dd>
-
-          <dt>Cloudflare Colo / PoP</dt>
-          <dd><code>{cf?.colo ?? 'Local Dev (no edge colo)'}</code></dd>
-
-          <dt>Geo Location</dt>
-          <dd><code>{cf?.country ? `${cf.country} - ${cf.city ?? 'Unknown'} (${cf.region ?? ''})` : 'Local Dev'}</code></dd>
-
-          <dt>Timezone</dt>
-          <dd><code>{cf?.timezone ?? 'Local Dev'}</code></dd>
-
-          <dt>Worker Environment</dt>
-          <dd><code>{environment}</code> (via <code>cloudflare:workers</code>)</dd>
-
-          <dt>User Agent</dt>
-          <dd><code>{userAgent}</code></dd>
-
-          <dt>Dynamic Query Parameter</dt>
-          <dd><code>{queryMsg}</code></dd>
-        </dl>
-
-        <div class="query-demo">
-          Try dynamic query params without client JS:
-          <a href="/ssr?msg=Hello+Cloudflare+Workers" style="color: var(--ssr-color); margin-left: 0.5rem;">?msg=Hello+Cloudflare+Workers</a>
-        </div>
-
-        <div class="interactive-row">
-          <button class="btn" onclick="window.location.reload()">🔄 Reload Page to Test</button>
-          <span class="hint">👉 Notice that <strong>every single reload</strong> produces a brand new Request Timestamp and Request ID.</span>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>💻 How this was configured in Astro</h2>
-        <p>In your Astro project configured with the Cloudflare adapter, routes are rendered on-demand by default (or explicitly opting in with <code>prerender = false</code>):</p>
-        <pre><code>---
-// src/pages/ssr.astro
-import &#123; env &#125; from 'cloudflare:workers';
-
-export const prerender = false; // &lt;-- Forces on-demand execution on the Worker
-
-const requestTimestamp = new Date().toISOString();
-const cf = Astro.request.cf; // Geolocation, colo, etc.
----
-&lt;h1&gt;Rendered at: &#123;requestTimestamp&#125;&lt;/h1&gt;</code></pre>
-      </section>
-
-      <div class="switch-banner">
-        <div>
-          <strong>Compare with SSG:</strong> See the static page where the timestamp never changes.
-        </div>
-        <a href="/ssg">⬅️ View SSG Page</a>
-      </div>
-    </main>
+    <p>🔄 <em>Reload the page — the time and number will <strong>change every time</strong>.</em></p>
   </body>
 </html>
