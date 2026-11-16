@@ -1,10 +1,5 @@
 ---
-import { env } from 'cloudflare:workers';
-
-const renderedAt = new Date().toISOString();
-const cf = Astro.request.cf;
-const clientAddress = Astro.clientAddress;
-const environment = env.ENVIRONMENT ?? 'development';
+import Nav from '../components/Nav.astro';
 ---
 
 <!doctype html>
@@ -13,18 +8,18 @@ const environment = env.ENVIRONMENT ?? 'development';
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro on Cloudflare Workers</title>
+		<title>Astro on Cloudflare: SSG vs SSR</title>
 		<style>
 			:root {
-				--bg-color: #0f172a;
-				--card-bg: #1e293b;
-				--text-main: #f8fafc;
+				--bg: #0b0f19;
+				--card-bg: #131c2e;
+				--text: #f1f5f9;
 				--text-muted: #94a3b8;
 				--accent: #f38020;
 				--accent-astro: #e0234e;
-				--code-bg: #0b1120;
-				--border: #334155;
+				--border: #1e293b;
+				--ssg-color: #10b981;
+				--ssr-color: #38bdf8;
 			}
 			* {
 				box-sizing: border-box;
@@ -33,21 +28,19 @@ const environment = env.ENVIRONMENT ?? 'development';
 			}
 			body {
 				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-				background-color: var(--bg-color);
-				color: var(--text-main);
+				background-color: var(--bg);
+				color: var(--text);
 				line-height: 1.6;
-				padding: 2rem 1rem;
+				padding: 1.5rem;
 				display: flex;
 				justify-content: center;
 			}
 			main {
-				max-width: 800px;
+				max-width: 860px;
 				width: 100%;
 			}
 			header {
 				margin-bottom: 2rem;
-				border-bottom: 1px solid var(--border);
-				padding-bottom: 1.5rem;
 			}
 			.badge {
 				display: inline-block;
@@ -69,131 +62,221 @@ const environment = env.ENVIRONMENT ?? 'development';
 				color: var(--text-muted);
 				font-size: 1.1rem;
 			}
-			.card {
+			.comparison-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+				margin-bottom: 2rem;
+			}
+			@media (max-width: 680px) {
+				.comparison-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+			.mode-card {
 				background-color: var(--card-bg);
 				border: 1px solid var(--border);
 				border-radius: 0.75rem;
 				padding: 1.5rem;
-				margin-bottom: 1.5rem;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
 			}
-			.card h2 {
-				font-size: 1.25rem;
-				margin-bottom: 1rem;
-				color: #cbd5e1;
+			.mode-card.ssg-card {
+				border-top: 4px solid var(--ssg-color);
+			}
+			.mode-card.ssr-card {
+				border-top: 4px solid var(--ssr-color);
+			}
+			.mode-header {
 				display: flex;
 				align-items: center;
-				gap: 0.5rem;
+				justify-content: space-between;
+				margin-bottom: 1rem;
 			}
-			dl {
-				display: grid;
-				grid-template-columns: 180px 1fr;
-				row-gap: 0.75rem;
-				font-size: 0.95rem;
+			.pill {
+				font-size: 0.75rem;
+				font-weight: 700;
+				text-transform: uppercase;
+				padding: 0.2rem 0.6rem;
+				border-radius: 9999px;
 			}
-			dt {
+			.pill.ssg {
+				background: rgba(16, 185, 129, 0.2);
+				color: var(--ssg-color);
+			}
+			.pill.ssr {
+				background: rgba(56, 189, 248, 0.2);
+				color: var(--ssr-color);
+			}
+			.mode-card h2 {
+				font-size: 1.35rem;
+				margin-bottom: 0.5rem;
+			}
+			.mode-card p {
 				color: var(--text-muted);
-				font-weight: 500;
+				font-size: 0.95rem;
+				margin-bottom: 1rem;
 			}
-			dd {
-				font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-				word-break: break-all;
+			.feature-list {
+				list-style: none;
+				margin-bottom: 1.5rem;
+				font-size: 0.9rem;
 			}
-			.badge-ssr {
-				background-color: #064e3b;
-				color: #34d399;
-				padding: 0.15rem 0.45rem;
-				border-radius: 4px;
-				font-weight: 600;
+			.feature-list li {
+				margin-bottom: 0.5rem;
+				padding-left: 1.25rem;
+				position: relative;
 			}
-			pre {
-				background-color: var(--code-bg);
-				padding: 1rem;
+			.feature-list li::before {
+				content: "✔";
+				position: absolute;
+				left: 0;
+			}
+			.ssg-card .feature-list li::before {
+				color: var(--ssg-color);
+			}
+			.ssr-card .feature-list li::before {
+				color: var(--ssr-color);
+			}
+			.btn-cta {
+				display: block;
+				text-align: center;
+				padding: 0.75rem 1rem;
 				border-radius: 0.5rem;
-				overflow-x: auto;
-				font-size: 0.875rem;
+				font-weight: 700;
+				text-decoration: none;
+				transition: opacity 0.15s;
+			}
+			.btn-cta.ssg-btn {
+				background-color: var(--ssg-color);
+				color: #042f2e;
+			}
+			.btn-cta.ssr-btn {
+				background-color: var(--ssr-color);
+				color: #082f49;
+			}
+			.btn-cta:hover {
+				opacity: 0.9;
+			}
+			.table-card {
+				background-color: var(--card-bg);
 				border: 1px solid var(--border);
+				border-radius: 0.75rem;
+				padding: 1.5rem;
+			}
+			.table-card h3 {
+				margin-bottom: 1rem;
+				font-size: 1.15rem;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.9rem;
+			}
+			th, td {
+				text-align: left;
+				padding: 0.75rem 0.5rem;
+				border-bottom: 1px solid var(--border);
+			}
+			th {
+				color: var(--text-muted);
+				font-weight: 600;
 			}
 			code {
 				font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-			}
-			a {
 				color: #38bdf8;
-				text-decoration: none;
-			}
-			a:hover {
-				text-decoration: underline;
-			}
-			.actions {
-				display: flex;
-				gap: 1rem;
-				margin-top: 1rem;
-			}
-			.btn {
-				display: inline-block;
-				background-color: var(--accent);
-				color: white;
-				padding: 0.5rem 1rem;
-				border-radius: 0.5rem;
-				font-weight: 600;
-				text-decoration: none;
-			}
-			.btn:hover {
-				opacity: 0.9;
-				text-decoration: none;
 			}
 		</style>
 	</head>
 	<body>
 		<main>
+			<Nav currentPath="/" />
+
 			<header>
-				<span class="badge">Astro 5 + Cloudflare Worker</span>
-				<h1>Server-Side Rendered (SSR)</h1>
-				<p class="subtitle">Running on Cloudflare's global edge network via Cloudflare Workers.</p>
+				<span class="badge">Astro 5 + Cloudflare Workers</span>
+				<h1>SSG vs SSR Comparison</h1>
+				<p class="subtitle">Experience the fundamental differences between Static Site Generation and On-Demand Server Rendering running on Cloudflare.</p>
 			</header>
 
-			<section class="card">
-				<h2>⚡ Live Request &amp; Runtime State</h2>
-				<dl>
-					<dt>Mode</dt>
-					<dd><span class="badge-ssr">On-Demand SSR</span> (Executed on Worker)</dd>
-
-					<dt>Rendered At</dt>
-					<dd>{renderedAt}</dd>
-
-					<dt>Client IP</dt>
-					<dd>{clientAddress}</dd>
-
-					<dt>Environment</dt>
-					<dd>{environment}</dd>
-
-					<dt>Cloudflare Colo</dt>
-					<dd>{cf?.colo ?? 'Local Dev (no edge colo)'}</dd>
-
-					<dt>Country / City</dt>
-					<dd>{cf?.country ? `${cf.country} / ${cf.city ?? 'Unknown'}` : 'Local Dev'}</dd>
-
-					<dt>Timezone</dt>
-					<dd>{cf?.timezone ?? 'Local Dev'}</dd>
-				</dl>
-
-				<div class="actions">
-					<a href="/api/health" class="btn">View JSON API Route (/api/health)</a>
+			<div class="comparison-grid">
+				<!-- SSG Card -->
+				<div class="mode-card ssg-card">
+					<div>
+						<div class="mode-header">
+							<span class="pill ssg">Prerendered</span>
+							<code>export const prerender = true</code>
+						</div>
+						<h2>🟢 SSG Page</h2>
+						<p>Pre-rendered to static HTML at build time. When you refresh the page, the timestamps and values stay completely frozen.</p>
+						<ul class="feature-list">
+							<li>Zero server execution time per request</li>
+							<li>Served directly by Cloudflare CDN cache</li>
+							<li>Timestamp never changes on reload</li>
+							<li>Static build UUID baked into the HTML</li>
+						</ul>
+					</div>
+					<a href="/ssg" class="btn-cta ssg-btn">Open SSG Demo (/ssg) ➡️</a>
 				</div>
-			</section>
 
-			<section class="card">
-				<h2>🛠️ Quick Commands</h2>
-				<pre><code># Start local dev server
-npm run dev
+				<!-- SSR Card -->
+				<div class="mode-card ssr-card">
+					<div>
+						<div class="mode-header">
+							<span class="pill ssr">On-Demand</span>
+							<code>export const prerender = false</code>
+						</div>
+						<h2>🔵 SSR Page</h2>
+						<p>Rendered dynamically by the Cloudflare Worker on every incoming request. Timestamps, request IDs, and CF edge metadata refresh on every reload.</p>
+						<ul class="feature-list">
+							<li>Executes on Cloudflare Worker per request</li>
+							<li>Reads live request headers &amp; cookies</li>
+							<li>Timestamp updates on every reload</li>
+							<li>Inspects live <code>cf</code> object (colo, country)</li>
+						</ul>
+					</div>
+					<a href="/ssr" class="btn-cta ssr-btn">Open SSR Demo (/ssr) ➡️</a>
+				</div>
+			</div>
 
-# Build for Cloudflare Worker
-npm run build
-
-# Preview locally using Cloudflare's workerd runtime
-npm run preview
-
-# Deploy to Cloudflare Workers
-npm run deploy</code></pre>
+			<section class="table-card">
+				<h3>Quick Verification Matrix</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Feature</th>
+							<th>SSG (<code>/ssg</code>)</th>
+							<th>SSR (<code>/ssr</code>)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Astro Directive</td>
+							<td><code>export const prerender = true;</code></td>
+							<td><code>export const prerender = false;</code></td>
+						</tr>
+						<tr>
+							<td>When it runs</td>
+							<td>Once during <code>astro build</code></td>
+							<td>On every HTTP request</td>
+						</tr>
+						<tr>
+							<td>On Refresh (F5)</td>
+							<td>Timestamp &amp; ID remain unchanged</td>
+							<td>New timestamp &amp; Request ID every time</td>
+						</tr>
+						<tr>
+							<td>Cloudflare Execution</td>
+							<td>Directly served via CDN static assets</td>
+							<td>Executes Cloudflare Worker JavaScript code</td>
+						</tr>
+						<tr>
+							<td>Access to <code>Astro.request.cf</code></td>
+							<td>No (Build-time only)</td>
+							<td>Yes (Live edge data, client IP, colo)</td>
+						</tr>
+					</tbody>
+				</table>
 			</section>
 		</main>
 	</body>

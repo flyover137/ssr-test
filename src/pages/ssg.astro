@@ -1,0 +1,291 @@
+---
+import Nav from '../components/Nav.astro';
+
+// EXPLICIT SSG PRERENDER INSTRUCTION
+export const prerender = true;
+
+const buildTimestamp = new Date().toISOString();
+const buildRandomId = Math.random().toString(36).substring(2, 12).toUpperCase();
+const nodeVersion = process.version;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSG Demonstration | Astro + Cloudflare</title>
+    <style>
+      :root {
+        --bg: #0b0f19;
+        --card-bg: #131c2e;
+        --text: #f1f5f9;
+        --text-muted: #94a3b8;
+        --ssg-color: #10b981;
+        --ssg-bg: rgba(16, 185, 129, 0.15);
+        --border: #1e293b;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: center;
+      }
+      main {
+        max-width: 820px;
+        width: 100%;
+      }
+      .badge-mode {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--ssg-bg);
+        color: var(--ssg-color);
+        border: 1px solid var(--ssg-color);
+        padding: 0.35rem 0.85rem;
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+      }
+      h1 {
+        font-size: 2.2rem;
+        margin-bottom: 0.5rem;
+      }
+      .subtitle {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+      }
+      .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      .card-ssg {
+        border-left: 4px solid var(--ssg-color);
+      }
+      .card h2 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        color: #e2e8f0;
+      }
+      .proof-grid {
+        display: grid;
+        grid-template-columns: 190px 1fr;
+        row-gap: 0.85rem;
+        font-size: 0.95rem;
+      }
+      .proof-grid dt {
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      .proof-grid dd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        word-break: break-all;
+      }
+      .timestamp-box {
+        background: #0f172a;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px dashed var(--ssg-color);
+        margin: 1rem 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      .clock-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+      @media (max-width: 600px) {
+        .clock-comparison {
+          grid-template-columns: 1fr;
+        }
+      }
+      .clock-tile {
+        background: #090e17;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border);
+      }
+      .clock-tile .label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+      }
+      .clock-tile .time {
+        font-size: 1.05rem;
+        font-weight: 600;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      .clock-tile.static .time {
+        color: var(--ssg-color);
+      }
+      .clock-tile.live .time {
+        color: #38bdf8;
+      }
+      .interactive-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        background-color: var(--ssg-color);
+        color: #042f2e;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 0.5rem;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: opacity 0.15s;
+        text-decoration: none;
+        display: inline-block;
+      }
+      .btn:hover {
+        opacity: 0.9;
+      }
+      .hint {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+      }
+      pre {
+        background-color: #060911;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        font-size: 0.875rem;
+        border: 1px solid var(--border);
+        margin-top: 0.5rem;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #38bdf8;
+      }
+      .switch-banner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(56, 189, 248, 0.1);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        padding: 1rem 1.25rem;
+        border-radius: 0.75rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .switch-banner a {
+        background-color: #0284c7;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <Nav currentPath="/ssg" />
+
+      <header>
+        <span class="badge-mode">🟢 SSG (Static Site Generation)</span>
+        <h1>Prerendered HTML Page</h1>
+        <p class="subtitle">Generated ahead of time at build/compile time. Served as a pure static asset without executing the Cloudflare Worker function per request.</p>
+      </header>
+
+      <section class="card card-ssg">
+        <h2>🔬 The Proof: Static Build Metadata</h2>
+        <p>This page was pre-compiled into a static <code>.html</code> file. The values below were generated once during the build:</p>
+
+        <div class="clock-comparison">
+          <div class="clock-tile static">
+            <div class="label">🔒 Baked-In Build Timestamp (Static)</div>
+            <div class="time" id="build-time">{buildTimestamp}</div>
+          </div>
+          <div class="clock-tile live">
+            <div class="label">⏱️ Current Browser Time (Live Client)</div>
+            <div class="time" id="client-time">Loading...</div>
+          </div>
+        </div>
+
+        <dl class="proof-grid">
+          <dt>Rendering Mode</dt>
+          <dd><strong>SSG (Prerendered)</strong></dd>
+
+          <dt>Configuration Flag</dt>
+          <dd><code>export const prerender = true;</code></dd>
+
+          <dt>Static Build ID</dt>
+          <dd><code>{buildRandomId}</code> (generated once at build)</dd>
+
+          <dt>Build Runtime</dt>
+          <dd>Node.js {nodeVersion} (build-time host)</dd>
+
+          <dt>Output Location</dt>
+          <dd><code>dist/client/ssg/index.html</code></dd>
+
+          <dt>Cloudflare Delivery</dt>
+          <dd>Served directly by Cloudflare CDN static asset cache / KV / Assets binding</dd>
+
+          <dt>Worker Execution</dt>
+          <dd><strong>None (0 ms CPU)</strong> – worker function is bypassed completely</dd>
+        </dl>
+
+        <div class="interactive-row">
+          <button class="btn" onclick="window.location.reload()">🔄 Reload Page to Test</button>
+          <span class="hint">👉 Notice the <strong>Build Timestamp</strong> and <strong>Static Build ID</strong> stay 100% frozen across reloads.</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>💻 How this was configured in Astro</h2>
+        <p>Even when your Astro project defaults to SSR with <code>output: 'server'</code>, you opt any specific page into SSG with one line of code:</p>
+        <pre><code>---
+// src/pages/ssg.astro
+export const prerender = true; // &lt;-- Forces this page to pre-render at build time
+
+const buildTimestamp = new Date().toISOString();
+---
+&lt;h1&gt;Page built once at: &#123;buildTimestamp&#125;&lt;/h1&gt;</code></pre>
+      </section>
+
+      <div class="switch-banner">
+        <div>
+          <strong>Compare with SSR:</strong> See what happens when a page executes dynamically on every request.
+        </div>
+        <a href="/ssr">View SSR Page ➡️</a>
+      </div>
+    </main>
+
+    <script>
+      function updateClientClock() {
+        const el = document.getElementById('client-time');
+        if (el) {
+          el.textContent = new Date().toISOString();
+        }
+      }
+      updateClientClock();
+      setInterval(updateClientClock, 1000);
+    </script>
+  </body>
+</html>
